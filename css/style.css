@@ -134,17 +134,40 @@ img { max-width: 100%; }
   width: 420px; height: 420px; right: -120px; top: -100px;
   background: radial-gradient(circle at 35% 35%, var(--coral), var(--coral-dark));
   opacity: .14;
+  animation: drift-a 19s ease-in-out infinite;
 }
 .sh2 {
   width: 300px; height: 300px; right: 180px; bottom: -160px;
   border: 44px solid var(--indigo); background: transparent;
   opacity: .10;
+  animation: drift-b 24s ease-in-out infinite; animation-delay: -8s;
 }
 .sh3 {
   width: 120px; height: 120px; right: 90px; top: 140px;
   background: var(--yellow);
   opacity: .35;
+  animation: drift-c 15s ease-in-out infinite; animation-delay: -4s;
 }
+
+/* Ambient background blobs reused on a couple of sections further down the page —
+   same brand palette as the hero, kept slow and low-opacity so they read as texture,
+   not motion competing with the content. */
+@keyframes drift-a {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%      { transform: translate(-24px, 20px) scale(1.05); }
+  66%      { transform: translate(16px, -18px) scale(.96); }
+}
+@keyframes drift-b {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%      { transform: translate(20px, -22px) scale(.97); }
+  66%      { transform: translate(-18px, 14px) scale(1.04); }
+}
+@keyframes drift-c {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(-16px, -20px) scale(1.06); }
+}
+.bg-shapes { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: -1; }
+.bg-shapes .bgsh { position: absolute; border-radius: 50%; }
 .hero-inner {
   position: relative;
   max-width: var(--maxw); margin: 0 auto;
@@ -215,7 +238,21 @@ img { max-width: 100%; }
 .clients .name em { font-style: normal; font-weight: 400; color: #9C98AC; font-size: 12.5px; }
 
 /* ---------- Sections ---------- */
-section { padding: 96px 0; }
+section { padding: 96px 0; position: relative; }
+
+/* Services section: soft indigo + yellow blobs, upper-right and lower-left */
+#services .bg-shapes .bgsh-1 {
+  width: 260px; height: 260px; right: -80px; top: -60px;
+  background: radial-gradient(circle at 35% 35%, var(--indigo), var(--indigo-dark));
+  opacity: .07;
+  animation: drift-b 22s ease-in-out infinite;
+}
+#services .bg-shapes .bgsh-2 {
+  width: 130px; height: 130px; left: 6%; bottom: 10%;
+  background: var(--yellow);
+  opacity: .18;
+  animation: drift-c 16s ease-in-out infinite; animation-delay: -6s;
+}
 .sec-label {
   font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--coral);
   text-transform: uppercase; letter-spacing: .12em; display: block; margin-bottom: 14px;
@@ -279,6 +316,54 @@ section { padding: 96px 0; }
 .card-empty:hover { border-color: var(--coral); box-shadow: 0 10px 28px rgba(255,107,74,.14); }
 .card-empty:hover .c-result { color: var(--coral-dark); }
 
+/* ---------- Tools & platforms (dual counter-scrolling rows) ---------- */
+.tools-sec { background: var(--white); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding-bottom: 76px; }
+.tools-sec .wrap { margin-bottom: 40px; }
+.tools-row {
+  overflow: hidden; display: flex;
+  padding-top: 8px;             /* clearance so the accent dot (which pokes above the badge) doesn't get clipped */
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
+}
+.tools-row-a { margin-bottom: 12px; }
+.tools-track { display: flex; flex: 0 0 auto; gap: 16px; padding: 0 8px; }
+.tools-row-a .tools-track { animation: tools-scroll-left 24s linear infinite; }
+.tools-row-b .tools-track { animation: tools-scroll-right 28s linear infinite; }
+.tools-row:hover .tools-track { animation-play-state: paused; }
+@keyframes tools-scroll-left { from { transform: translateX(0); } to { transform: translateX(-100%); } }
+@keyframes tools-scroll-right { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+
+.tool-badge {
+  display: flex; align-items: center; gap: 12px; flex: 0 0 auto; position: relative;
+  background: var(--paper); border: 1px solid var(--line); border-radius: 999px;
+  padding: 10px 24px 10px 10px;
+  box-shadow: 0 2px 8px rgba(27,27,46,.05);
+}
+.tool-badge img {
+  width: 36px; height: 36px; object-fit: contain; border-radius: 8px; flex-shrink: 0;
+  background: var(--line);           /* neutral placeholder fill while the real logo downloads */
+  opacity: 0; transition: opacity .3s ease;
+}
+.tool-badge img.loaded { opacity: 1; background: #fff; }
+.tool-name { font-weight: 600; font-size: 14.5px; color: var(--ink); white-space: nowrap; }
+.tool-dot { position: absolute; top: -4px; right: -4px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--white); }
+/* cyclic (3n) so the colour rhythm continues however many badges a track ends up holding,
+   including the auto-added clones that keep wide screens gap-free */
+.tool-badge:nth-child(3n+1) .tool-dot { background: var(--indigo); }
+.tool-badge:nth-child(3n+2) .tool-dot { background: var(--coral); }
+.tool-badge:nth-child(3n)   .tool-dot { background: var(--yellow); }
+
+@media (prefers-reduced-motion: reduce) {
+  .tools-track { animation: none; }
+  .tools-track[aria-hidden="true"] { display: none; }
+  .badge-clone { display: none; }   /* with the scroll frozen, repeats would just look doubled */
+}
+@media (max-width: 640px) {
+  .tool-badge { padding: 8px 18px 8px 8px; gap: 9px; }
+  .tool-badge img { width: 28px; height: 28px; }
+  .tool-name { font-size: 13px; }
+}
+
 /* ---------- Creative showcase (marquee) ---------- */
 .showcase { padding-bottom: 76px; }
 .showcase .wrap { margin-bottom: 44px; }
@@ -321,7 +406,7 @@ section { padding: 96px 0; }
 }
 .marquee-track img.loaded { opacity: 1; }
 @media (prefers-reduced-motion: reduce) {
-  .marquee-track img { transition: none; }
+  .marquee-track img, .tool-badge img { transition: none; }
 }
 .cr-item-video { position: relative; }
 .cr-item-video .cr-play {
@@ -548,6 +633,19 @@ footer {
 
 /* ---------- Estimator ---------- */
 .estimator-sec { background: var(--white); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+/* Pricing section: coral blob lower-right, small indigo dot upper-left */
+.estimator-sec .bg-shapes .bgsh-1 {
+  width: 300px; height: 300px; right: -100px; bottom: -120px;
+  background: radial-gradient(circle at 35% 35%, var(--coral), var(--coral-dark));
+  opacity: .08;
+  animation: drift-a 21s ease-in-out infinite; animation-delay: -10s;
+}
+.estimator-sec .bg-shapes .bgsh-2 {
+  width: 90px; height: 90px; left: 8%; top: 12%;
+  background: var(--indigo);
+  opacity: .12;
+  animation: drift-c 17s ease-in-out infinite; animation-delay: -3s;
+}
 .estimator {
   display: grid; grid-template-columns: 1fr 1fr; gap: 0;
   margin-top: 44px; border: 1px solid var(--line); border-radius: var(--r);
@@ -634,6 +732,7 @@ footer {
   .reveal { opacity: 1; transform: none; transition: none; }
   .caret { animation: none; }
   .btn, .card { transition: none; }
+  .sh1, .sh2, .sh3, .bgsh { animation: none; }
 }
 
 /* ---------- Responsive ---------- */

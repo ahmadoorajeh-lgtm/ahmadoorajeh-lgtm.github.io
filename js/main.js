@@ -5,6 +5,22 @@
 (function () {
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  // Shared image-reveal helper: adds .loaded the instant an <img> actually finishes downloading
+  // (or errors), instead of letting it pop in abruptly whenever the network happens to deliver it.
+  // A hard 4s fallback guarantees a slow or broken image still becomes visible rather than sitting
+  // invisible forever. Used everywhere on the page that shows real photos/logos, not placeholders.
+  const revealOnLoad = (imgs) => {
+    imgs.forEach((img) => {
+      const reveal = () => img.classList.add('loaded');
+      if (img.complete) reveal();
+      else {
+        img.addEventListener('load', reveal, { once: true });
+        img.addEventListener('error', reveal, { once: true });
+        setTimeout(reveal, 4000);
+      }
+    });
+  };
+
   /* ---------- 0. Mobile nav toggle ---------- */
   const navToggle = document.getElementById('nav-toggle');
   const navLinks = document.getElementById('nav-links');
@@ -105,7 +121,7 @@
     const tick = (t) => {
       const p = Math.min((t - t0) / dur, 1);
       const eased = 1 - Math.pow(1 - p, 3);
-      el.textContent = prefix + Math.round(target * eased) + suffix;
+      el.textContent = prefix + Math.round(target * eased).toLocaleString('en-US') + suffix;
       if (p < 1) requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
@@ -113,7 +129,7 @@
   if (counters.length) {
     if (reduced || !('IntersectionObserver' in window)) {
       counters.forEach((el) => {
-        el.textContent = (el.dataset.prefix || '') + el.dataset.count + (el.dataset.suffix || '');
+        el.textContent = (el.dataset.prefix || '') + Number(el.dataset.count).toLocaleString('en-US') + (el.dataset.suffix || '');
       });
     } else {
       const cio = new IntersectionObserver((entries) => {
@@ -125,25 +141,70 @@
     }
   }
 
+  /* ---------- Tools & platforms: reveal each logo as it loads ---------- */
+  revealOnLoad(document.querySelectorAll('.tool-badge img'));
+
+  /* ---------- Tools & platforms: keep both rows gap-free on ANY screen width ----------
+     The CSS marquee loops by sliding one track out while its duplicate follows. That is only
+     seamless if each track is at least as wide as the row itself — otherwise there's a moment
+     where the track has slid past but its duplicate hasn't arrived, which shows as an empty
+     gap travelling across the row (this is why the top row gapped but the bottom row, whose
+     badges happen to be wider than the viewport, didn't). Instead of hand-balancing badges
+     per row — which just moves the problem to whichever row is narrower on the next-wider
+     monitor — measure and clone the badge set until every track out-measures its row. */
+  const TOOLS_SPEED = 38;   // px per second, identical for both rows — the CSS keyframes slide
+                            // one full track width per animation cycle, so a fixed duration made
+                            // wider tracks physically move faster (why the bottom row outpaced
+                            // the top). Deriving duration from measured width pins the speed.
+  const fillToolsRows = () => {
+    document.querySelectorAll('.tools-row').forEach((row) => {
+      const rowTracks = row.querySelectorAll('.tools-track');
+      if (rowTracks.length !== 2) return;
+      row.querySelectorAll('.badge-clone').forEach((el) => el.remove());
+      const originals = [...rowTracks[0].children];
+      const rowWidth = row.getBoundingClientRect().width;
+      let guard = 0;
+      while (rowTracks[0].getBoundingClientRect().width < rowWidth && guard < 8) {
+        rowTracks.forEach((tr) => {
+          originals.forEach((badge) => {
+            const clone = badge.cloneNode(true);
+            clone.classList.add('badge-clone');
+            clone.setAttribute('aria-hidden', 'true');
+            tr.appendChild(clone);
+            revealOnLoad(clone.querySelectorAll('img'));
+          });
+        });
+        guard++;
+      }
+      const dur = (rowTracks[0].getBoundingClientRect().width / TOOLS_SPEED).toFixed(2) + 's';
+      rowTracks.forEach((tr) => { tr.style.animationDuration = dur; });
+    });
+  };
+  fillToolsRows();
+  window.addEventListener('load', fillToolsRows);
+  let toolsResizeTimer = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(toolsResizeTimer);
+    toolsResizeTimer = setTimeout(fillToolsRows, 200);
+  });
+
   /* ---------- 4. Creative reel: arrow-driven marquee + lightbox ---------- */
   const marquee = document.getElementById('creative-marquee');
   if (marquee) {
-    // reveal each thumbnail as its real image finishes downloading, instead of a jarring pop-in;
-    // a hard 4s fallback guarantees a slow or broken image still shows rather than staying invisible
-    marquee.querySelectorAll('.marquee-track img').forEach((img) => {
-      const reveal = () => img.classList.add('loaded');
-      if (img.complete) reveal();
-      else {
-        img.addEventListener('load', reveal, { once: true });
-        img.addEventListener('error', reveal, { once: true });
-        setTimeout(reveal, 4000);
-      }
-    });
+    revealOnLoad(marquee.querySelectorAll('.marquee-track img'));
 
     const tracks = [...marquee.querySelectorAll('.marquee-track')];
     const AUTO_SPEED = 46;              // px/second, auto-scroll rate
     const STEP = 242;                   // px per arrow click (~one card + gap)
     const RESUME_DELAY = 2600;          // ms of stillness after an arrow click before auto-scroll resumes
+    const MAX_QUEUE = STEP * 2.5;       // hard cap on how far a burst of rapid clicks can push the target
+                                         // ahead of the ACTUAL current position — without this, clicking fast
+                                         // lets the intended destination silently run far ahead while the visible
+                                         // gap always looks like a normal single step, then all of that hidden
+                                         // distance has to be covered in one go the moment clicking stops
+    const MAX_SPEED = 1600;             // px/second ceiling on the tween itself, so even a maxed-out queue
+                                         // can never look like it's snapping/flying — worst case it just
+                                         // cruises at this brisk-but-calm pace until it arrives
     let trackWidth = 0;
     let offset = 0;
     let target = null;                  // px offset the arrow-tween is easing toward
@@ -153,10 +214,26 @@
     let last = null;
 
     const measure = () => { trackWidth = tracks[0].getBoundingClientRect().width || 1; };
-    const wrap = () => { offset = ((offset % trackWidth) + trackWidth) % trackWidth; };
+    // offset is a CONTINUOUS position that only ever accumulates — it is never folded back
+    // to zero. The fold happens purely at paint time (modulo track width), so the loop seam
+    // is invisible and, crucially, an arrow-click target near the seam stays a small, always
+    // reachable distance away. (The old version folded `offset` every frame but not `target`,
+    // so a click near the seam left the target a full lap ahead — the reel then raced a whole
+    // loop, or forever, to catch it. That was the "moving viciously" bug.)
     const paint = () => {
-      const t = 'translateX(' + (-offset) + 'px)';
+      const x = ((offset % trackWidth) + trackWidth) % trackWidth;
+      const t = 'translateX(' + (-x) + 'px)';
       tracks.forEach((tr) => { tr.style.transform = t; });
+    };
+    const rebase = () => {
+      // keep the numbers from growing unboundedly: shift offset AND target down by a whole
+      // number of laps together — the difference between them (the tween) is untouched, and
+      // the painted position is identical, so this is invisible on screen
+      if (Math.abs(offset) > trackWidth * 4) {
+        const k = Math.floor(offset / trackWidth) * trackWidth;
+        offset -= k;
+        if (target !== null) target -= k;
+      }
     };
     const frame = (now) => {
       if (last === null) last = now;
@@ -165,11 +242,15 @@
       if (target !== null) {
         const diff = target - offset;
         if (Math.abs(diff) < 0.5) { offset = target; target = null; }
-        else { offset += diff * Math.min(1, dt * 8); }
+        else {
+          const wanted = diff * Math.min(1, dt * 8);
+          const capped = MAX_SPEED * dt;
+          offset += Math.sign(wanted) * Math.min(Math.abs(wanted), capped);
+        }
       } else if (!hovering && !interacting && !reduced) {
         offset += AUTO_SPEED * dt;
       }
-      wrap();
+      rebase();
       paint();
       requestAnimationFrame(frame);
     };
@@ -182,7 +263,11 @@
     marquee.addEventListener('mouseleave', () => { hovering = false; });
 
     const step = (dir) => {
-      target = offset + dir * STEP;
+      // clamp against the LIVE offset (not the pending target) — this is what stops a burst of
+      // rapid clicks from quietly stacking up a huge backlog that only becomes visible, as a
+      // sudden fast catch-up, once the user stops clicking
+      const wanted = offset + dir * STEP;
+      target = Math.max(offset - MAX_QUEUE, Math.min(offset + MAX_QUEUE, wanted));
       interacting = true;
       clearTimeout(resumeTimer);
       resumeTimer = setTimeout(() => { interacting = false; }, RESUME_DELAY);
