@@ -5,6 +5,33 @@
 (function () {
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  /* ---------- 0. Mobile nav toggle ---------- */
+  const navToggle = document.getElementById('nav-toggle');
+  const navLinks = document.getElementById('nav-links');
+  if (navToggle && navLinks) {
+    const closeMenu = () => {
+      navLinks.classList.remove('open');
+      navToggle.setAttribute('aria-expanded', 'false');
+    };
+    const openMenu = () => {
+      navLinks.classList.add('open');
+      navToggle.setAttribute('aria-expanded', 'true');
+    };
+    navToggle.addEventListener('click', () => {
+      navLinks.classList.contains('open') ? closeMenu() : openMenu();
+    });
+    // tapping any link (an anchor jump) closes the dropdown
+    navLinks.querySelectorAll('a').forEach((a) => a.addEventListener('click', closeMenu));
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMenu(); });
+    document.addEventListener('click', (e) => {
+      if (navLinks.classList.contains('open') && !navLinks.contains(e.target) && !navToggle.contains(e.target)) {
+        closeMenu();
+      }
+    });
+    // resizing past the mobile breakpoint (e.g. rotating a tablet) shouldn't leave it stuck open
+    window.addEventListener('resize', () => { if (window.innerWidth > 640) closeMenu(); });
+  }
+
   /* ---------- 1. Hero role ticker ---------- */
   const typeText = document.getElementById('type-text');
   const headline = document.getElementById('hero-headline');

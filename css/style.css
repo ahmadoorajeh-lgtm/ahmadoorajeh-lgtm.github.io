@@ -104,7 +104,23 @@ img { max-width: 100%; }
 }
 .btn-ghost:hover { background: var(--ink); color: #fff !important; box-shadow: none; }
 .nav .btn { padding: 9px 20px; font-size: 14px; }
-.nav-toggle { display: none; }
+.nav-inner { position: relative; }
+
+/* Hamburger toggle — hidden on desktop, shown only under the mobile breakpoint below */
+.nav-toggle {
+  display: none; flex-direction: column; align-items: center; justify-content: center;
+  gap: 5px; width: 40px; height: 40px; border-radius: 8px;
+  background: transparent; border: 1.5px solid var(--line); cursor: pointer; padding: 0;
+}
+.nav-toggle:hover { border-color: var(--indigo); }
+.nav-toggle:focus-visible { outline: 3px solid var(--indigo); outline-offset: 2px; }
+.nav-toggle-bar {
+  width: 20px; height: 2px; background: var(--ink); border-radius: 2px;
+  transition: transform .2s ease, opacity .2s ease;
+}
+.nav-toggle[aria-expanded="true"] .nav-toggle-bar:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.nav-toggle[aria-expanded="true"] .nav-toggle-bar:nth-child(2) { opacity: 0; }
+.nav-toggle[aria-expanded="true"] .nav-toggle-bar:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
 /* ---------- Hero ---------- */
 .hero {
@@ -632,8 +648,23 @@ footer {
 @media (max-width: 640px) {
   section { padding: 64px 0; }
   .steps { grid-template-columns: 1fr; }
-  .nav-links { display: none; }
-  .nav-toggle { display: block; }
+  .nav-toggle { display: flex; }
+  .nav-links {
+    display: none;                 /* JS adds/removes .open to reveal this as a dropdown */
+    position: absolute; top: 100%; left: 0; right: 0;
+    flex-direction: column; align-items: stretch; gap: 0;
+    background: var(--paper); border: 1px solid var(--line); border-top: none;
+    padding: 4px 24px 18px;
+    box-shadow: 0 16px 28px rgba(27,27,46,.10);
+  }
+  .nav-links.open { display: flex; }
+  .nav-links li { width: 100%; }
+  .nav-links a:not(.btn) {
+    display: block; padding: 13px 0; font-size: 15.5px;
+    border-bottom: 1px solid var(--line);
+  }
+  .nav-links li:nth-last-child(2) a { border-bottom: none; }
+  .nav-links .btn { display: block; width: 100%; text-align: center; margin: 14px 0 4px; }
   .hero-inner { padding: 72px 24px 84px; }
   .sh1 { width: 260px; height: 260px; }
 }
