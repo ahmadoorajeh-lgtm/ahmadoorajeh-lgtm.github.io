@@ -327,8 +327,11 @@ section { padding: 96px 0; position: relative; }
 }
 .tools-row-a { margin-bottom: 12px; }
 .tools-track { display: flex; flex: 0 0 auto; gap: 16px; padding: 0 8px; }
-.tools-row-a .tools-track { animation: tools-scroll-left 24s linear infinite; }
-.tools-row-b .tools-track { animation: tools-scroll-right 28s linear infinite; }
+/* IDENTICAL durations are load-bearing: row B is row A reversed, so with equal speed and a
+   shared start the two rows stay phase-locked — a badge leaving the top row's left edge is
+   re-entering the bottom row's left edge. JS re-pins both to the same px/s after measuring. */
+.tools-row-a .tools-track { animation: tools-scroll-left 48s linear infinite; }
+.tools-row-b .tools-track { animation: tools-scroll-right 48s linear infinite; }
 .tools-row:hover .tools-track { animation-play-state: paused; }
 @keyframes tools-scroll-left { from { transform: translateX(0); } to { transform: translateX(-100%); } }
 @keyframes tools-scroll-right { from { transform: translateX(-100%); } to { transform: translateX(0); } }
@@ -354,9 +357,14 @@ section { padding: 96px 0; position: relative; }
 .tool-badge:nth-child(3n)   .tool-dot { background: var(--yellow); }
 
 @media (prefers-reduced-motion: reduce) {
-  .tools-track { animation: none; }
+  /* Reduced motion must mean REDUCED, not broken: a frozen scroll strip would clip most of
+     the badges out of view entirely. Instead: row A becomes a static pill cloud that wraps
+     to show ALL tools, and row B (the same 11 tools reversed) is dropped as duplicate. */
+  .tools-track { animation: none; flex-wrap: wrap; justify-content: center; width: 100%; flex: 1 1 auto; row-gap: 14px; }
   .tools-track[aria-hidden="true"] { display: none; }
   .badge-clone { display: none; }   /* with the scroll frozen, repeats would just look doubled */
+  .tools-row { -webkit-mask-image: none; mask-image: none; }
+  .tools-row-b { display: none; }
 }
 @media (max-width: 640px) {
   .tool-badge { padding: 8px 18px 8px 8px; gap: 9px; }
@@ -730,7 +738,7 @@ footer {
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .reveal { opacity: 1; transform: none; transition: none; }
-  .caret { animation: none; }
+  .caret { display: none; }   /* with typing off, a visible cursor just reads as "stuck" */
   .btn, .card { transition: none; }
   .sh1, .sh2, .sh3, .bgsh { animation: none; }
 }

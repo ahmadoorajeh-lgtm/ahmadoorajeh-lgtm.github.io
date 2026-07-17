@@ -155,14 +155,26 @@
   const TOOLS_SPEED = 38;   // px per second, identical for both rows — the CSS keyframes slide
                             // one full track width per animation cycle, so a fixed duration made
                             // wider tracks physically move faster (why the bottom row outpaced
-                            // the top). Deriving duration from measured width pins the speed.
+                            // the top). Deriving duration from measured width pins the speed,
+                            // and IDENTICAL durations keep the two counter-scrolling rows
+                            // phase-locked for the conveyor hand-off (row B is row A reversed).
+  let lastToolsWidth = null;
   const fillToolsRows = () => {
+    if (reduced) return;    // reduced-motion shows a static wrapped pill cloud instead — no
+                            // clones or durations needed, and DOM churn would just cause reflow
+    const firstRow = document.querySelector('.tools-row');
+    if (!firstRow) return;
+    const rowWidth = firstRow.getBoundingClientRect().width;
+    // mobile browsers fire `resize` when the URL bar collapses on scroll — HEIGHT changes but
+    // width doesn't. Rebuilding the tracks on those events restarted the animation mid-scroll,
+    // which showed up as the rows visibly snapping while scrolling the page on a phone.
+    if (lastToolsWidth !== null && Math.abs(rowWidth - lastToolsWidth) < 1) return;
+    lastToolsWidth = rowWidth;
     document.querySelectorAll('.tools-row').forEach((row) => {
       const rowTracks = row.querySelectorAll('.tools-track');
       if (rowTracks.length !== 2) return;
       row.querySelectorAll('.badge-clone').forEach((el) => el.remove());
       const originals = [...rowTracks[0].children];
-      const rowWidth = row.getBoundingClientRect().width;
       let guard = 0;
       while (rowTracks[0].getBoundingClientRect().width < rowWidth && guard < 8) {
         rowTracks.forEach((tr) => {
@@ -181,7 +193,11 @@
     });
   };
   fillToolsRows();
-  window.addEventListener('load', fillToolsRows);
+  // one controlled re-measure after web fonts settle (badge widths depend on the font);
+  // width-guard above makes this a no-op unless something actually changed
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(() => { lastToolsWidth = null; fillToolsRows(); });
+  }
   let toolsResizeTimer = null;
   window.addEventListener('resize', () => {
     clearTimeout(toolsResizeTimer);
