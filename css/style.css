@@ -357,13 +357,23 @@ section { padding: 96px 0; position: relative; }
 .tool-badge:nth-child(3n)   .tool-dot { background: var(--yellow); }
 
 @media (prefers-reduced-motion: reduce) {
-  /* Reduced motion must mean REDUCED, not broken: a frozen scroll strip would clip most of
-     the badges out of view entirely. Instead: row A becomes a static pill cloud that wraps
-     to show ALL tools, and row B (the same 11 tools reversed) is dropped as duplicate. */
-  .tools-track { animation: none; flex-wrap: wrap; justify-content: center; width: 100%; flex: 1 1 auto; row-gap: 14px; }
+  /* Reduced motion must mean REDUCED, not broken. A previous version tried to re-wrap the
+     strip into a static multi-line "pill cloud" (flex-wrap + width:100% inside the row's
+     flex container) — that computation went wrong on iOS Safari specifically, leaving badges
+     scattered one-per-line down the left edge instead of a tidy grid. Rather than chase a
+     browser-specific flex quirk, this drops the clever layout entirely: the strip stays a
+     single un-wrapped row, but the row switches from clipping (`overflow:hidden`, needed for
+     the scroll illusion) to a plain native horizontal scroller. No wrapping math anywhere —
+     just swipe to see the rest, exactly like any ordinary scrollable chip list. */
+  .tools-track { animation: none; }
   .tools-track[aria-hidden="true"] { display: none; }
-  .badge-clone { display: none; }   /* with the scroll frozen, repeats would just look doubled */
-  .tools-row { -webkit-mask-image: none; mask-image: none; }
+  .badge-clone { display: none; }   /* the duplicate-for-looping copies aren't needed once nothing scrolls automatically */
+  .tools-row {
+    overflow-x: auto; overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    -webkit-mask-image: none; mask-image: none;
+    padding-bottom: 10px;   /* clearance so an OS scrollbar never overlaps the badges */
+  }
   .tools-row-b { display: none; }
 }
 @media (max-width: 640px) {
