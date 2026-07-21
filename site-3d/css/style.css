@@ -1,13 +1,13 @@
 /* =====================================================================
-   Ahmad Rajeh — Portfolio v2: scroll-triggered 3D
-   Design note: the "3D" is delivered as discrete reveal transitions
-   (perspective + rotate + translateZ, eased on scroll-into-view via
-   IntersectionObserver), NOT a continuous scroll-hijacking engine.
-   That's a deliberate choice — the main site went through several
-   real bugs this session from continuous scroll-math (runaway easing,
-   phase-drift, iOS flex quirks). Discrete CSS-transition reveals use
-   the exact same battle-tested mechanism as the main site's .reveal
-   class, so this stays smooth and reliable on every device.
+   Ahmad Rajeh — Portfolio v2: a slide deck, not a scrolling page.
+   Design note: each .slide is an absolutely-stacked full-screen panel.
+   Only one carries `.current` at a time; advancing (wheel tick, swipe,
+   arrow key, or a dot click) is a single discrete index change in JS —
+   never a continuous scroll-position calculation. That distinction
+   matters: the main site's earlier bugs (runaway easing, phase-drift)
+   all came from continuous scroll math accumulating error. A discrete
+   "go to slide N, animate the swap" state machine can't drift the same
+   way, so this stays reliable while still feeling like a presentation.
    Palette carried over from the main site (indigo/coral/yellow) so
    the two feel like the same person, just a different showcase.
    ===================================================================== */
@@ -33,13 +33,16 @@
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
-html { scroll-behavior: smooth; background: var(--paper); }
+html { background: var(--paper); }
 body {
   background: var(--paper); color: var(--ink);
   font-family: var(--body); line-height: 1.7;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
 }
+/* Only the slide-deck page (index.html) gets this — creatives.html is a normal
+   scrolling gallery and doesn't carry the .deck class. */
+body.deck, html:has(body.deck) { height: 100%; overflow: hidden; overscroll-behavior: none; }
 ::selection { background: var(--yellow); color: var(--paper); }
 h1, h2, h3 { font-family: var(--heading); font-weight: 800; line-height: 1.1; letter-spacing: -0.01em; }
 p { color: var(--ink-soft); }
@@ -50,6 +53,40 @@ a { color: var(--indigo); }
 /* perspective is set on each SECTION rather than <body> — keeps 3D children
    contained to their own scene instead of one giant shared vanishing point */
 .scene { perspective: 1400px; }
+
+/* ---------- Slides: one full-screen scene at a time, swapped by JS ---------- */
+.slide {
+  position: absolute; inset: 0; height: 100%; overflow-y: auto;
+  display: flex; flex-direction: column;
+  justify-content: center; /* fallback for browsers that don't support `safe` */
+  justify-content: safe center; /* if content is taller than the slide, don't clip the top out of reach */
+  padding: 100px 24px 60px;
+  opacity: 0; pointer-events: none; transform: scale(.97);
+  transition: opacity .7s cubic-bezier(.22,.8,.25,1), transform .7s cubic-bezier(.22,.8,.25,1);
+}
+.slide.current { opacity: 1; pointer-events: auto; transform: none; z-index: 2; }
+/* direction classes: applied briefly during a transition, then cleared */
+.slide.enter-down, .slide.exit-down { transform: translateY(56px) scale(.97); }
+.slide.enter-up, .slide.exit-up { transform: translateY(-56px) scale(.97); }
+@media (max-width: 760px) { .slide { padding: 90px 20px 40px; } }
+@media (prefers-reduced-motion: reduce) { .slide { transition: none; } }
+
+/* ---------- Side dot navigation ---------- */
+.slide-dots {
+  position: fixed; right: 22px; top: 50%; transform: translateY(-50%); z-index: 60;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.slide-dots .dot {
+  width: 9px; height: 9px; border-radius: 50%; padding: 0;
+  background: transparent; border: 1.5px solid var(--ink-soft); cursor: pointer;
+  transition: background .25s ease, border-color .25s ease, transform .25s ease;
+}
+.slide-dots .dot:hover { border-color: var(--ink); }
+.slide-dots .dot.active { background: var(--indigo); border-color: var(--indigo); transform: scale(1.3); }
+@media (max-width: 760px) {
+  .slide-dots { right: 10px; gap: 8px; }
+  .slide-dots .dot { width: 7px; height: 7px; }
+}
 
 /* ---------- Nav ---------- */
 .nav {
@@ -72,7 +109,8 @@ a { color: var(--indigo); }
 @media (max-width: 760px) { .nav-links { display: none; } }
 
 /* ---------- Hero: 3D tilting photo card ---------- */
-.hero { min-height: 100svh; display: flex; align-items: center; position: relative; overflow: hidden; }
+/* layout/position/sizing now come from .slide — this class only adds the glow clipping */
+.hero { overflow: hidden; }
 .hero-glow {
   position: absolute; inset: -20% -10% auto -10%; height: 70%;
   background: radial-gradient(circle at 30% 30%, rgba(109,99,255,.35), transparent 60%),
@@ -115,7 +153,7 @@ a { color: var(--indigo); }
   box-shadow: 0 40px 80px -20px rgba(0,0,0,.6);
   opacity: 0; transition: opacity 1s ease, transform 1s cubic-bezier(.2,.8,.2,1);
 }
-.hero-card.in { opacity: 1; transform: rotateY(-10deg) rotateX(4deg) translateZ(0); }
+.slide.current .hero-card { opacity: 1; transform: rotateY(-10deg) rotateX(4deg) translateZ(0); }
 .hero-card:hover { transform: rotateY(-4deg) rotateX(1deg) translateZ(20px); }
 .hero-card img { display: block; width: 100%; height: auto; aspect-ratio: 3/4; object-fit: contain; }
 .hero-card-tag {
@@ -125,17 +163,21 @@ a { color: var(--indigo); }
   font-family: var(--mono); font-size: 12.5px;
 }
 @media (max-width: 760px) {
-  .hero-grid { grid-template-columns: 1fr; padding-top: 100px; }
-  .hero-card { transform: rotateY(0) rotateX(0); max-width: 320px; margin: 0 auto; }
-  .hero-card.in { transform: rotateY(0) rotateX(0); }
+  .hero-grid { grid-template-columns: 1fr; padding-top: 0; }
+  .hero-card { transform: rotateY(0) rotateX(0); max-width: 260px; margin: 0 auto; }
+  .slide.current .hero-card { transform: rotateY(0) rotateX(0); }
 }
 
-/* ---------- Stats strip ---------- */
-.stats { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--paper-soft); }
-.stats-grid { max-width: 1100px; margin: 0 auto; padding: 34px 24px; display: grid; grid-template-columns: repeat(4,1fr); gap: 20px; text-align: center; }
-.stat b { display: block; font-family: var(--heading); font-size: clamp(24px,3vw,34px); color: var(--yellow); }
-.stat span { font-size: 12.5px; color: var(--ink-soft); }
-@media (max-width: 700px) { .stats-grid { grid-template-columns: 1fr 1fr; } }
+/* ---------- Stats strip (folded into the hero slide) ---------- */
+.stats-grid {
+  max-width: 640px; margin-top: 40px; padding-top: 28px; border-top: 1px solid var(--line);
+  display: grid; grid-template-columns: repeat(4,1fr); gap: 18px;
+  opacity: 0; transition: opacity 1s ease .2s;
+}
+.slide.current .stats-grid { opacity: 1; }
+.stat b { display: block; font-family: var(--heading); font-size: clamp(20px,2.4vw,28px); color: var(--yellow); }
+.stat span { font-size: 11.5px; color: var(--ink-soft); }
+@media (max-width: 760px) { .stats-grid { grid-template-columns: 1fr 1fr; margin-top: 26px; padding-top: 20px; } }
 
 /* ---------- Section headings (shared) ---------- */
 section { padding: 100px 0; }
@@ -143,17 +185,17 @@ section { padding: 100px 0; }
 .sec-title { font-size: clamp(28px,3.6vw,42px); margin-bottom: 16px; }
 .sec-intro { max-width: 60ch; font-size: 16.5px; }
 
-/* ---------- Work: 3D card deck, alternating tilt-in from left/right ---------- */
-.deck { margin-top: 56px; display: flex; flex-direction: column; gap: 90px; }
+/* ---------- Work: one project per slide, tilting in from left/right ---------- */
+.project-kicker { opacity: .7; }
 .deck-item {
   display: grid; grid-template-columns: 1fr 1fr; gap: 44px; align-items: center;
   opacity: 0; transition: opacity .9s ease, transform .9s cubic-bezier(.2,.8,.2,1);
 }
 .deck-item.from-left  { transform: perspective(1200px) rotateY(22deg) translateX(-40px); }
 .deck-item.from-right { transform: perspective(1200px) rotateY(-22deg) translateX(40px); }
-.deck-item.in { opacity: 1; transform: perspective(1200px) rotateY(0) translateX(0); }
-.deck-item:nth-child(even) { direction: rtl; }
-.deck-item:nth-child(even) > * { direction: ltr; }
+.slide.current .deck-item { opacity: 1; transform: perspective(1200px) rotateY(0) translateX(0); }
+.deck-item.reverse { direction: rtl; }
+.deck-item.reverse > * { direction: ltr; }
 .deck-media {
   position: relative; border-radius: 18px; overflow: hidden; border: 1px solid var(--line);
   box-shadow: 0 30px 60px -24px rgba(0,0,0,.55);
@@ -188,14 +230,18 @@ section { padding: 100px 0; }
 .deck-item p { font-size: 15.5px; }
 .deck-result { margin-top: 16px; font-family: var(--mono); font-size: 13.5px; color: var(--yellow); }
 @media (max-width: 820px) {
-  .deck-item, .deck-item:nth-child(even) { grid-template-columns: 1fr; direction: ltr; }
+  .deck-item, .deck-item.reverse { grid-template-columns: 1fr; direction: ltr; }
   .deck-item.from-left, .deck-item.from-right { transform: perspective(1000px) rotateX(14deg) translateY(30px); }
-  .deck-item.in { transform: none; }
+  .slide.current .deck-item { transform: none; }
 }
 
 /* ---------- Tools: 3D rotating ring ---------- */
 .ring-sec { background: var(--paper-soft); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); overflow: hidden; }
-.ring-stage { perspective: 900px; height: 260px; display: flex; align-items: center; justify-content: center; margin-top: 50px; }
+.ring-stage {
+  perspective: 900px; height: 260px; display: flex; align-items: center; justify-content: center; margin-top: 50px;
+  opacity: 0; transform: scale(.85); transition: opacity .8s ease, transform .8s cubic-bezier(.2,.8,.2,1);
+}
+.slide.current .ring-stage { opacity: 1; transform: scale(1); }
 .ring {
   position: relative; width: 140px; height: 140px; transform-style: preserve-3d;
   animation: spin 32s linear infinite;
@@ -229,7 +275,15 @@ section { padding: 100px 0; }
 
 /* ---------- About ---------- */
 .about-grid { display: grid; grid-template-columns: .8fr 1.2fr; gap: 50px; align-items: center; margin-top: 10px; }
-.about-photo { border-radius: 18px; overflow: hidden; border: 1px solid var(--line); background: radial-gradient(circle at 50% 32%, rgba(109,99,255,.28), var(--paper-soft) 72%); }
+.about-photo {
+  border-radius: 18px; overflow: hidden; border: 1px solid var(--line);
+  background: radial-gradient(circle at 50% 32%, rgba(109,99,255,.28), var(--paper-soft) 72%);
+  opacity: 0; transform: perspective(1200px) rotateY(18deg) translateX(-30px);
+  transition: opacity .9s ease, transform .9s cubic-bezier(.2,.8,.2,1);
+}
+.slide.current .about-photo { opacity: 1; transform: perspective(1200px) rotateY(0) translateX(0); }
+.about-text { opacity: 0; transform: translateY(24px); transition: opacity .9s ease .15s, transform .9s cubic-bezier(.2,.8,.2,1) .15s; }
+.slide.current .about-text { opacity: 1; transform: none; }
 .about-photo img { width: 100%; height: auto; display: block; aspect-ratio: 3/4; object-fit: contain; }
 .about-text p { margin-bottom: 16px; font-size: 16px; }
 @media (max-width: 760px) { .about-grid { grid-template-columns: 1fr; } .about-photo { max-width: 280px; } }
@@ -239,11 +293,20 @@ section { padding: 100px 0; }
   margin-top: 40px; border: 1px solid var(--line); border-radius: 20px; padding: 40px;
   background: linear-gradient(135deg, rgba(109,99,255,.10), rgba(255,107,74,.06));
   text-align: center;
+  opacity: 0; transform: scale(.94); transition: opacity .9s ease, transform .9s cubic-bezier(.2,.8,.2,1);
 }
+.slide.current .contact-box { opacity: 1; transform: scale(1); }
 .contact-box h3 { font-size: 26px; margin-bottom: 14px; }
 .contact-box .ctas { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-top: 22px; }
 
-footer { border-top: 1px solid var(--line); padding: 34px 0; text-align: center; font-size: 13.5px; color: var(--ink-soft); }
+.final-cta {
+  margin-top: 30px; text-align: center;
+  opacity: 0; transform: translateY(16px); transition: opacity .9s ease .2s, transform .9s cubic-bezier(.2,.8,.2,1) .2s;
+}
+.slide.current .final-cta { opacity: 1; transform: none; }
+.final-cta p { font-size: 14.5px; margin-bottom: 14px; }
+
+footer { padding: 34px 0 0; text-align: center; font-size: 13.5px; color: var(--ink-soft); }
 footer a { color: var(--ink-soft); text-decoration: none; }
 footer a:hover { color: var(--ink); }
 
@@ -284,10 +347,12 @@ footer a:hover { color: var(--ink); }
   border: 1px solid rgba(255,255,255,.3);
 }
 
-/* ---------- Reduced motion: same content, no 3D, simple fade ---------- */
+/* ---------- Reduced motion: same content, no 3D, no snap, everything just visible ---------- */
 @media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
-  .hero-card, .deck-item { transition: opacity .4s ease; transform: none !important; }
-  .hero-card.in, .deck-item.in { opacity: 1; }
+  html { scroll-behavior: auto; scroll-snap-type: none; }
+  .slide { scroll-snap-align: none; }
+  .hero-card, .deck-item, .stats-grid, .ring-stage, .about-photo, .about-text, .contact-box {
+    transition: opacity .4s ease !important; transform: none !important; opacity: 1 !important;
+  }
   .hero-card:hover { transform: none; }
 }

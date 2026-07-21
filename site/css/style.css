@@ -4,7 +4,7 @@
      Indigo #4F46E5 (primary / CTAs / links)
      Coral  #FF6B4A (accents / energy)
      Yellow #FFC940 (highlights / marks)
-   Neutrals: Paper #FDFBF7 · Ink #1B1B2E
+   Neutrals: Paper #EDE8DE · Ink #1B1B2E
    Type: Gilroy ExtraBold (headings) · Poppins (body) · IBM Plex Mono (labels/stats)
    ================================================================ */
 
@@ -24,7 +24,10 @@
 }
 
 :root {
-  --paper: #FDFBF7;
+  /* Toned down from a near-white #FDFBF7/#FFFFFF — arriving here from the dark
+     3D site was a harsh brightness jump ("flashbang"). Same warm family, just
+     softer, so the handoff between the two sites feels less jarring. */
+  --paper: #EDE8DE;
   --ink: #1B1B2E;
   --ink-soft: #4A4A63;
   --indigo: #4F46E5;
@@ -35,8 +38,8 @@
   --coral-tint: #FFEFEA;
   --yellow: #FFC940;
   --yellow-tint: #FFF4D6;
-  --line: #E9E5DC;
-  --white: #FFFFFF;
+  --line: #DDD6C7;
+  --white: #F6F2EA;
   --mono: 'IBM Plex Mono', ui-monospace, 'Courier New', monospace;
   --heading: 'Gilroy', 'Poppins', sans-serif;
   --body: 'Poppins', system-ui, sans-serif;
@@ -69,7 +72,7 @@ img { max-width: 100%; }
 /* ---------- Nav ---------- */
 .nav {
   position: sticky; top: 0; z-index: 50;
-  background: rgba(253, 251, 247, 0.92);
+  background: rgba(237, 232, 222, 0.92);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--line);
 }
