@@ -85,6 +85,19 @@
 
     const advance = (delta) => goTo(current + delta);
 
+    // A slide's own content can be taller than the screen (its `overflow-y:auto`
+    // handles that). Before jumping to the next/previous slide, check there's
+    // nothing left to scroll within the CURRENT slide first — otherwise a user
+    // scrolling down a tall slide (e.g. the hero on a small phone) gets bounced
+    // to the next scene before they've even seen the rest of this one.
+    const EPS = 2;
+    const canScrollWithin = (dir) => {
+      const el = slides[current];
+      return dir > 0
+        ? el.scrollTop + el.clientHeight < el.scrollHeight - EPS
+        : el.scrollTop > EPS;
+    };
+
     // Wheel: one tick of real intent = one slide. Trackpads fire many tiny
     // deltaY events per gesture, so `animating` (or the reduced-motion no-op
     // above) is what keeps a single swipe from skipping several slides.
@@ -92,8 +105,10 @@
       const lightbox = document.getElementById('lightbox');
       if (lightbox && !lightbox.hidden) return;
       if (Math.abs(e.deltaY) < 4) return;
+      const dir = e.deltaY > 0 ? 1 : -1;
+      if (canScrollWithin(dir)) return; // let the slide's own content scroll first
       e.preventDefault();
-      advance(e.deltaY > 0 ? 1 : -1);
+      advance(dir);
     }, { passive: false });
 
     // Touch: swipe up = next (matches Stories/Reels), swipe down = previous.
@@ -104,8 +119,11 @@
       if (lightbox && !lightbox.hidden) { touchStartY = null; return; }
       if (touchStartY === null) return;
       const dy = touchStartY - e.changedTouches[0].clientY;
-      if (Math.abs(dy) > 44) advance(dy > 0 ? 1 : -1);
       touchStartY = null;
+      if (Math.abs(dy) <= 44) return;
+      const dir = dy > 0 ? 1 : -1;
+      if (canScrollWithin(dir)) return; // still more of this slide to see
+      advance(dir);
     }, { passive: true });
 
     // Keyboard: arrow/page keys and spacebar, presentation-clicker style.
