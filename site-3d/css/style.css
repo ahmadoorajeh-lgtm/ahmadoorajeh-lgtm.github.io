@@ -1,0 +1,277 @@
+/* =====================================================================
+   Ahmad Rajeh — Portfolio v2: scroll-triggered 3D
+   Design note: the "3D" is delivered as discrete reveal transitions
+   (perspective + rotate + translateZ, eased on scroll-into-view via
+   IntersectionObserver), NOT a continuous scroll-hijacking engine.
+   That's a deliberate choice — the main site went through several
+   real bugs this session from continuous scroll-math (runaway easing,
+   phase-drift, iOS flex quirks). Discrete CSS-transition reveals use
+   the exact same battle-tested mechanism as the main site's .reveal
+   class, so this stays smooth and reliable on every device.
+   Palette carried over from the main site (indigo/coral/yellow) so
+   the two feel like the same person, just a different showcase.
+   ===================================================================== */
+
+@font-face {
+  font-family: 'Gilroy';
+  src: url('../fonts/Gilroy-ExtraBold.otf') format('opentype');
+  font-weight: 800; font-style: normal; font-display: swap;
+}
+
+:root {
+  --paper: #0F0F1A;
+  --paper-soft: #16162A;
+  --ink: #F5F3EE;
+  --ink-soft: #ABA8C4;
+  --indigo: #6D63FF;
+  --coral: #FF6B4A;
+  --yellow: #FFC940;
+  --line: rgba(245,243,238,.12);
+  --heading: 'Gilroy', 'Poppins', sans-serif;
+  --body: 'Poppins', system-ui, sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; background: var(--paper); }
+body {
+  background: var(--paper); color: var(--ink);
+  font-family: var(--body); line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+::selection { background: var(--yellow); color: var(--paper); }
+h1, h2, h3 { font-family: var(--heading); font-weight: 800; line-height: 1.1; letter-spacing: -0.01em; }
+p { color: var(--ink-soft); }
+a { color: var(--indigo); }
+.mono { font-family: var(--mono); }
+.wrap { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+/* perspective is set on each SECTION rather than <body> — keeps 3D children
+   contained to their own scene instead of one giant shared vanishing point */
+.scene { perspective: 1400px; }
+
+/* ---------- Nav ---------- */
+.nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+  background: rgba(15,15,26,.72); backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+.nav-inner { max-width: 1100px; margin: 0 auto; padding: 0 24px; height: 64px; display: flex; align-items: center; justify-content: space-between; }
+.nav-logo { font-family: var(--heading); font-weight: 800; font-size: 18px; color: var(--ink); text-decoration: none; }
+.nav-logo .dot { color: var(--coral); }
+.nav-links { display: flex; gap: 26px; list-style: none; }
+.nav-links a { color: var(--ink-soft); text-decoration: none; font-size: 14px; font-weight: 500; }
+.nav-links a:hover { color: var(--ink); }
+.badge-legacy {
+  font-family: var(--mono); font-size: 11px; color: var(--ink-soft);
+  border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px;
+  text-decoration: none;
+}
+.badge-legacy:hover { border-color: var(--indigo); color: var(--ink); }
+@media (max-width: 760px) { .nav-links { display: none; } }
+
+/* ---------- Hero: 3D tilting photo card ---------- */
+.hero { min-height: 100svh; display: flex; align-items: center; position: relative; overflow: hidden; }
+.hero-glow {
+  position: absolute; inset: -20% -10% auto -10%; height: 70%;
+  background: radial-gradient(circle at 30% 30%, rgba(109,99,255,.35), transparent 60%),
+              radial-gradient(circle at 75% 60%, rgba(255,107,74,.25), transparent 55%);
+  filter: blur(10px); pointer-events: none;
+}
+.hero-grid {
+  max-width: 1100px; margin: 0 auto; padding: 110px 24px 60px;
+  display: grid; grid-template-columns: 1.15fr .85fr; gap: 48px; align-items: center;
+  position: relative; width: 100%;
+}
+.hero-kicker {
+  font-family: var(--mono); font-size: 13px; color: var(--coral);
+  text-transform: uppercase; letter-spacing: .12em; margin-bottom: 18px; display: block;
+}
+.hero h1 { font-size: clamp(34px, 5vw, 58px); max-width: 13ch; }
+.hero h1 .hl { color: var(--indigo); }
+.hero-sub { max-width: 46ch; font-size: 17px; margin: 22px 0 30px; }
+.hero-ctas { display: flex; gap: 14px; flex-wrap: wrap; }
+.btn {
+  display: inline-block; font-family: var(--body); font-weight: 600; font-size: 15px;
+  padding: 13px 26px; border-radius: 999px; text-decoration: none; border: none; cursor: pointer;
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+.btn-primary { background: var(--indigo); color: #fff; box-shadow: 0 8px 24px rgba(109,99,255,.35); }
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(109,99,255,.45); }
+.btn-ghost { background: transparent; color: var(--ink); border: 1.5px solid var(--line); }
+.btn-ghost:hover { border-color: var(--ink); }
+
+/* the 3D card itself: starts rotated in space, settles flat-ish with a gentle
+   permanent tilt that responds a little further on hover — a "physical object"
+   feel without any continuous scroll-coupling to break */
+.hero-card-wrap { perspective: 1200px; }
+.hero-card {
+  position: relative; border-radius: 22px; overflow: hidden;
+  border: 1px solid var(--line);
+  background: radial-gradient(circle at 50% 32%, rgba(109,99,255,.28), var(--paper-soft) 72%);
+  transform: rotateY(-18deg) rotateX(6deg) translateZ(0);
+  transform-style: preserve-3d;
+  box-shadow: 0 40px 80px -20px rgba(0,0,0,.6);
+  opacity: 0; transition: opacity 1s ease, transform 1s cubic-bezier(.2,.8,.2,1);
+}
+.hero-card.in { opacity: 1; transform: rotateY(-10deg) rotateX(4deg) translateZ(0); }
+.hero-card:hover { transform: rotateY(-4deg) rotateX(1deg) translateZ(20px); }
+.hero-card img { display: block; width: 100%; height: auto; aspect-ratio: 3/4; object-fit: contain; }
+.hero-card-tag {
+  position: absolute; bottom: 16px; left: 16px; right: 16px;
+  background: rgba(15,15,26,.75); backdrop-filter: blur(6px);
+  border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px;
+  font-family: var(--mono); font-size: 12.5px;
+}
+@media (max-width: 760px) {
+  .hero-grid { grid-template-columns: 1fr; padding-top: 100px; }
+  .hero-card { transform: rotateY(0) rotateX(0); max-width: 320px; margin: 0 auto; }
+  .hero-card.in { transform: rotateY(0) rotateX(0); }
+}
+
+/* ---------- Stats strip ---------- */
+.stats { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--paper-soft); }
+.stats-grid { max-width: 1100px; margin: 0 auto; padding: 34px 24px; display: grid; grid-template-columns: repeat(4,1fr); gap: 20px; text-align: center; }
+.stat b { display: block; font-family: var(--heading); font-size: clamp(24px,3vw,34px); color: var(--yellow); }
+.stat span { font-size: 12.5px; color: var(--ink-soft); }
+@media (max-width: 700px) { .stats-grid { grid-template-columns: 1fr 1fr; } }
+
+/* ---------- Section headings (shared) ---------- */
+section { padding: 100px 0; }
+.sec-label { font-family: var(--mono); font-size: 13px; color: var(--coral); text-transform: uppercase; letter-spacing: .1em; display: block; margin-bottom: 14px; }
+.sec-title { font-size: clamp(28px,3.6vw,42px); margin-bottom: 16px; }
+.sec-intro { max-width: 60ch; font-size: 16.5px; }
+
+/* ---------- Work: 3D card deck, alternating tilt-in from left/right ---------- */
+.deck { margin-top: 56px; display: flex; flex-direction: column; gap: 90px; }
+.deck-item {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 44px; align-items: center;
+  opacity: 0; transition: opacity .9s ease, transform .9s cubic-bezier(.2,.8,.2,1);
+}
+.deck-item.from-left  { transform: perspective(1200px) rotateY(22deg) translateX(-40px); }
+.deck-item.from-right { transform: perspective(1200px) rotateY(-22deg) translateX(40px); }
+.deck-item.in { opacity: 1; transform: perspective(1200px) rotateY(0) translateX(0); }
+.deck-item:nth-child(even) { direction: rtl; }
+.deck-item:nth-child(even) > * { direction: ltr; }
+.deck-media {
+  position: relative; border-radius: 18px; overflow: hidden; border: 1px solid var(--line);
+  box-shadow: 0 30px 60px -24px rgba(0,0,0,.55);
+  aspect-ratio: 4/3; background: var(--paper-soft);
+}
+.deck-media img, .deck-media video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.deck-media .play, .deck-media .zoom {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: rgba(15,15,26,.25); color: #fff; font-size: 20px; cursor: pointer; border: none;
+  opacity: 0; transition: opacity .2s ease;
+}
+.deck-media .play { opacity: 1; }
+.deck-media:hover .zoom, .deck-media:focus-within .zoom { opacity: 1; }
+.deck-media .play span, .deck-media .zoom span {
+  width: 56px; height: 56px; border-radius: 50%; background: rgba(15,15,26,.6);
+  display: flex; align-items: center; justify-content: center; padding-left: 4px;
+  border: 1px solid rgba(255,255,255,.3);
+}
+.deck-media .zoom span { padding-left: 0; font-size: 22px; }
+
+/* Northstar KPI cards with no genuine photo asset get a clean stat visual instead of a
+   borrowed/misattributed image — never illustrate a Northstar result with another client's media */
+.deck-stat {
+  width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 8px; text-align: center; padding: 24px;
+  background: linear-gradient(135deg, rgba(109,99,255,.16), rgba(255,107,74,.08));
+}
+.deck-stat b { font-family: var(--heading); font-size: clamp(40px,6vw,64px); color: var(--yellow); line-height: 1; }
+.deck-stat span { font-size: 13.5px; color: var(--ink-soft); max-width: 22ch; }
+.deck-tag { font-family: var(--mono); font-size: 12px; color: var(--indigo); background: rgba(109,99,255,.14); border-radius: 999px; padding: 4px 12px; display: inline-block; margin-bottom: 14px; }
+.deck-item h3 { font-size: 24px; margin-bottom: 10px; }
+.deck-item p { font-size: 15.5px; }
+.deck-result { margin-top: 16px; font-family: var(--mono); font-size: 13.5px; color: var(--yellow); }
+@media (max-width: 820px) {
+  .deck-item, .deck-item:nth-child(even) { grid-template-columns: 1fr; direction: ltr; }
+  .deck-item.from-left, .deck-item.from-right { transform: perspective(1000px) rotateX(14deg) translateY(30px); }
+  .deck-item.in { transform: none; }
+}
+
+/* ---------- Tools: 3D rotating ring ---------- */
+.ring-sec { background: var(--paper-soft); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); overflow: hidden; }
+.ring-stage { perspective: 900px; height: 260px; display: flex; align-items: center; justify-content: center; margin-top: 50px; }
+.ring {
+  position: relative; width: 140px; height: 140px; transform-style: preserve-3d;
+  animation: spin 32s linear infinite;
+}
+.ring-item {
+  position: absolute; inset: 0; margin: auto; width: 84px; height: 84px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--paper); border: 1px solid var(--line); border-radius: 18px;
+  box-shadow: 0 10px 24px rgba(0,0,0,.35);
+}
+.ring-item img { width: 42px; height: 42px; object-fit: contain; }
+@keyframes spin { from { transform: rotateY(0deg); } to { transform: rotateY(360deg); } }
+.ring-stage:hover .ring { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) { .ring { animation: none; } }
+
+/* ---------- About ---------- */
+.about-grid { display: grid; grid-template-columns: .8fr 1.2fr; gap: 50px; align-items: center; margin-top: 10px; }
+.about-photo { border-radius: 18px; overflow: hidden; border: 1px solid var(--line); background: radial-gradient(circle at 50% 32%, rgba(109,99,255,.28), var(--paper-soft) 72%); }
+.about-photo img { width: 100%; height: auto; display: block; aspect-ratio: 3/4; object-fit: contain; }
+.about-text p { margin-bottom: 16px; font-size: 16px; }
+@media (max-width: 760px) { .about-grid { grid-template-columns: 1fr; } .about-photo { max-width: 280px; } }
+
+/* ---------- Contact ---------- */
+.contact-box {
+  margin-top: 40px; border: 1px solid var(--line); border-radius: 20px; padding: 40px;
+  background: linear-gradient(135deg, rgba(109,99,255,.10), rgba(255,107,74,.06));
+  text-align: center;
+}
+.contact-box h3 { font-size: 26px; margin-bottom: 14px; }
+.contact-box .ctas { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-top: 22px; }
+
+footer { border-top: 1px solid var(--line); padding: 34px 0; text-align: center; font-size: 13.5px; color: var(--ink-soft); }
+footer a { color: var(--ink-soft); text-decoration: none; }
+footer a:hover { color: var(--ink); }
+
+/* ---------- Lightbox (video) ---------- */
+.lightbox { position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center; padding: 24px; }
+.lightbox[hidden] { display: none; }
+.lightbox-bg { position: absolute; inset: 0; background: rgba(0,0,0,.8); }
+.lightbox-panel { position: relative; z-index: 1; width: min(720px, 92vw); }
+.lightbox-panel video, .lightbox-panel img { width: 100%; border-radius: 14px; display: block; }
+.lightbox-panel video[hidden], .lightbox-panel img[hidden] { display: none; }
+.lightbox-close {
+  position: absolute; top: -46px; right: 0; width: 38px; height: 38px; border-radius: 50%;
+  background: var(--ink); color: var(--paper); border: none; font-size: 20px; cursor: pointer;
+}
+
+/* ---------- Creatives page ---------- */
+.creatives-intro { max-width: 65ch; }
+.creatives-grid {
+  margin-top: 50px; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap: 28px;
+}
+.creative-item {
+  position: relative; border-radius: 16px; overflow: hidden; border: 1px solid var(--line);
+  aspect-ratio: 4/3; background: var(--paper-soft); cursor: pointer; padding: 0; display: block; width: 100%;
+}
+.creative-item img, .creative-item video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.creative-item .cap {
+  position: absolute; left: 0; right: 0; bottom: 0; padding: 10px 14px;
+  background: linear-gradient(0deg, rgba(15,15,26,.9), transparent);
+  font-size: 12.5px; color: var(--ink-soft); text-align: left;
+}
+.creative-item .play {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: rgba(15,15,26,.15); color: #fff; font-size: 20px;
+}
+.creative-item .play span {
+  width: 52px; height: 52px; border-radius: 50%; background: rgba(15,15,26,.6);
+  display: flex; align-items: center; justify-content: center; padding-left: 4px;
+  border: 1px solid rgba(255,255,255,.3);
+}
+
+/* ---------- Reduced motion: same content, no 3D, simple fade ---------- */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .hero-card, .deck-item { transition: opacity .4s ease; transform: none !important; }
+  .hero-card.in, .deck-item.in { opacity: 1; }
+  .hero-card:hover { transform: none; }
+}
