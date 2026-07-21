@@ -14,7 +14,12 @@
   } else {
     const io = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
-        if (entry.isIntersecting) { entry.target.classList.add('in'); io.unobserve(entry.target); }
+        if (entry.isIntersecting) {
+          // Safari on iOS can fire this before the un-revealed state ever paints, skipping
+          // the transition entirely. Double rAF guarantees one paint of the hidden state first.
+          requestAnimationFrame(() => requestAnimationFrame(() => entry.target.classList.add('in')));
+          io.unobserve(entry.target);
+        }
       });
     }, { threshold: 0.2 });
     revealTargets.forEach((el) => io.observe(el));

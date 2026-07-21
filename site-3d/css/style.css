@@ -211,6 +211,22 @@ section { padding: 100px 0; }
 .ring-stage:hover .ring { animation-play-state: paused; }
 @media (prefers-reduced-motion: reduce) { .ring { animation: none; } }
 
+/* On phone widths the 3D ring's radius overflows the screen and the perspective reads as
+   broken rather than "spinning" — swap to a plain swipeable row, same fallback already
+   proven on the main site's tools section. */
+@media (max-width: 760px) {
+  .ring-stage { perspective: none; height: auto; padding: 6px 0; justify-content: flex-start; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .ring {
+    animation: none; transform: none !important; transform-style: flat;
+    width: max-content; height: auto; display: flex; gap: 14px; padding: 0 24px;
+  }
+  .ring-item {
+    position: static; margin: 0; transform: none !important; flex: 0 0 auto;
+    width: 64px; height: 64px;
+  }
+  .ring-item img { width: 32px; height: 32px; }
+}
+
 /* ---------- About ---------- */
 .about-grid { display: grid; grid-template-columns: .8fr 1.2fr; gap: 50px; align-items: center; margin-top: 10px; }
 .about-photo { border-radius: 18px; overflow: hidden; border: 1px solid var(--line); background: radial-gradient(circle at 50% 32%, rgba(109,99,255,.28), var(--paper-soft) 72%); }
