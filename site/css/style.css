@@ -516,7 +516,7 @@ section { padding: 96px 0; position: relative; }
 .about-grid { display: grid; grid-template-columns: 300px 1fr; gap: 60px; align-items: start; margin-top: 8px; }
 .about-photo { position: relative; margin: 10px 0 0 10px; }
 .about-photo img {
-  width: 100%; height: auto; aspect-ratio: 3 / 4; object-fit: contain;
+  width: 100%; height: auto;
   border-radius: var(--r); display: block;
   position: relative; z-index: 1;
   border: 1px solid var(--line);
