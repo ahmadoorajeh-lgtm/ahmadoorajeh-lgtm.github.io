@@ -90,7 +90,14 @@
     // nothing left to scroll within the CURRENT slide first — otherwise a user
     // scrolling down a tall slide (e.g. the hero on a small phone) gets bounced
     // to the next scene before they've even seen the rest of this one.
-    const EPS = 2;
+    // EPS is intentionally generous (not a couple of px): mobile browsers resize
+    // the viewport as the address bar collapses/expands, so `clientHeight` can be
+    // a little smaller than its settled value right when a swipe starts. With a
+    // tiny EPS that phantom few-px "overflow" reads as real content still to
+    // scroll, so the guard blocks every swipe forever and the slide feels dead
+    // until a dot is clicked directly. A larger threshold ignores overflow too
+    // small to ever be visually meaningful, so it can't wedge navigation.
+    const EPS = 32;
     const canScrollWithin = (dir) => {
       const el = slides[current];
       return dir > 0

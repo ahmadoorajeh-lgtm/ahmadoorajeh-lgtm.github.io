@@ -662,14 +662,15 @@ section { padding: 96px 0; position: relative; }
 .contact-alt h3 { font-size: 19px; margin-bottom: 12px; }
 .contact-alt p { font-size: 15.5px; margin-bottom: 22px; }
 .contact-alt .alt-block {
-  /* Callout box, per Wayne's brief: lavender is "ideal for ... callout boxes." */
+  /* Callout box, per Wayne's brief: lavender is "ideal for ... callout boxes."
+     The accent border stays inside the lavender family instead of mixing in
+     olive/navy — one card, one hue family, not three competing colours. */
   background: var(--lavender); border: 1px solid var(--lavender-dark); border-radius: var(--r);
   padding: 28px; margin-bottom: 18px;
-  border-left: 5px solid var(--primary);
+  border-left: 5px solid var(--lavender-ink);
 }
 .contact-alt .alt-block h3 { color: var(--lavender-ink); }
 .contact-alt .alt-block p { color: rgba(59,52,84,.8); }
-.contact-alt .alt-block + .alt-block { border-left-color: var(--blue-ink); }
 .contact-alt .alt-block .mono { font-size: 14px; }
 .contact-alt a.plain { color: var(--link-blue); font-weight: 600; text-decoration: none; }
 .contact-alt a.plain:hover { text-decoration: underline; }

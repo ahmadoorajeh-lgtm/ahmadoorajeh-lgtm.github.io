@@ -66,6 +66,14 @@ a { color: var(--link-blue); } /* Wayne's rule: inline text links are always blu
 /* ---------- Slides: one full-screen scene at a time, swapped by JS ---------- */
 .slide {
   position: absolute; inset: 0; height: 100%; overflow-y: auto;
+  /* Without these two, a nested overflow-y:auto box inside an absolutely
+     positioned ancestor can fail to respond to touch drags at all on some
+     mobile browsers (classic iOS Safari "scroll does nothing" bug) — this is
+     what let a tall slide (the hero, once its content overflows on a phone)
+     swallow every swipe with no visible feedback, so the deck felt frozen
+     until a dot was tapped directly. */
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
   display: flex; flex-direction: column;
   justify-content: center; /* fallback for browsers that don't support `safe` */
   justify-content: safe center; /* if content is taller than the slide, don't clip the top out of reach */
