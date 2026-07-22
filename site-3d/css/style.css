@@ -128,7 +128,13 @@ a { color: var(--link-blue); } /* Wayne's rule: inline text links are always blu
 
 /* ---------- Hero: 3D tilting photo card ---------- */
 /* layout/position/sizing now come from .slide — this class only adds the glow clipping */
-.hero { overflow: hidden; }
+/* overflow-x only, not the shorthand: .hero and .slide are literally the same
+   element (the hero <section> carries both classes), and this rule is declared
+   AFTER .slide's `overflow-y: auto` in the file — the shorthand `overflow:
+   hidden` was silently clobbering that back to hidden, which is exactly why
+   the hero slide (and only the hero slide) couldn't be scrolled internally on
+   a phone once its content ran taller than the screen. */
+.hero { overflow-x: hidden; }
 .hero-glow {
   position: absolute; inset: -20% -10% auto -10%; height: 70%;
   background: radial-gradient(circle at 30% 30%, rgba(219,209,237,.55), transparent 60%),
