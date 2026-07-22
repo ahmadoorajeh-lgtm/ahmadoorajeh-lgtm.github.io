@@ -1,5 +1,5 @@
 /* =====================================================================
-   Ahmad Rajeh — Portfolio v2: a slide deck, not a scrolling page.
+   Ahmad Rajeh — Portfolio v3: a slide deck, not a scrolling page.
    Design note: each .slide is an absolutely-stacked full-screen panel.
    Only one carries `.current` at a time; advancing (wheel tick, swipe,
    arrow key, or a dot click) is a single discrete index change in JS —
@@ -8,8 +8,9 @@
    all came from continuous scroll math accumulating error. A discrete
    "go to slide N, animate the swap" state machine can't drift the same
    way, so this stays reliable while still feeling like a presentation.
-   Palette carried over from the main site (indigo/coral/yellow) so
-   the two feel like the same person, just a different showcase.
+   Palette carried over from the main site — same "Warm Ivory" system:
+   Ivory background, Olive Gold as the primary brand colour (nav,
+   buttons, headings), Soft Lavender + Powder Blue as light accents.
    ===================================================================== */
 
 @font-face {
@@ -19,14 +20,22 @@
 }
 
 :root {
-  --paper: #0F0F1A;
-  --paper-soft: #16162A;
-  --ink: #F5F3EE;
-  --ink-soft: #ABA8C4;
-  --indigo: #6D63FF;
-  --coral: #FF6B4A;
-  --yellow: #FFC940;
-  --line: rgba(245,243,238,.12);
+  /* Wayne's "Warm Ivory" system, matching the main site. */
+  --paper: #EDE8D0;            /* Warm Ivory — main background */
+  --paper-soft: #FFFFFF;       /* white cards/panels */
+  --surface-border: #DDD7C3;   /* soft warm card border */
+  --primary: #6E632E;          /* Olive Gold — brand colour */
+  --primary-dark: #5D5428;
+  --ink: #2E2E2E;
+  --ink-soft: #444444;
+  --ink-faint: #707070;
+  --lavender: #DBD1ED;         /* accent 1 */
+  --lavender-dark: #C7B9E3;
+  --lavender-ink: #3B3454;
+  --blue: #ABBEED;             /* accent 2 */
+  --blue-ink: #304A7A;
+  --line: #DDD7C3;
+  --link-blue: #3160D8; /* Wayne's rule: inline text links are always blue */
   --heading: 'Gilroy', 'Poppins', sans-serif;
   --body: 'Poppins', system-ui, sans-serif;
   --mono: 'IBM Plex Mono', ui-monospace, monospace;
@@ -43,10 +52,10 @@ body {
 /* Only the slide-deck page (index.html) gets this — creatives.html is a normal
    scrolling gallery and doesn't carry the .deck class. */
 body.deck, html:has(body.deck) { height: 100%; overflow: hidden; overscroll-behavior: none; }
-::selection { background: var(--yellow); color: var(--paper); }
-h1, h2, h3 { font-family: var(--heading); font-weight: 800; line-height: 1.1; letter-spacing: -0.01em; }
+::selection { background: var(--blue); color: var(--ink); }
+h1, h2, h3 { font-family: var(--heading); font-weight: 800; line-height: 1.1; letter-spacing: -0.01em; color: var(--primary); }
 p { color: var(--ink-soft); }
-a { color: var(--indigo); }
+a { color: var(--link-blue); } /* Wayne's rule: inline text links are always blue */
 .mono { font-family: var(--mono); }
 .wrap { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
 
@@ -78,11 +87,11 @@ a { color: var(--indigo); }
 }
 .slide-dots .dot {
   width: 9px; height: 9px; border-radius: 50%; padding: 0;
-  background: transparent; border: 1.5px solid var(--ink-soft); cursor: pointer;
+  background: transparent; border: 1.5px solid var(--ink-faint); cursor: pointer;
   transition: background .25s ease, border-color .25s ease, transform .25s ease;
 }
-.slide-dots .dot:hover { border-color: var(--ink); }
-.slide-dots .dot.active { background: var(--indigo); border-color: var(--indigo); transform: scale(1.3); }
+.slide-dots .dot:hover { border-color: var(--primary); }
+.slide-dots .dot.active { background: var(--primary); border-color: var(--primary); transform: scale(1.3); }
 @media (max-width: 760px) {
   .slide-dots { right: 10px; gap: 8px; }
   .slide-dots .dot { width: 7px; height: 7px; }
@@ -91,21 +100,22 @@ a { color: var(--indigo); }
 /* ---------- Nav ---------- */
 .nav {
   position: fixed; top: 0; left: 0; right: 0; z-index: 50;
-  background: rgba(15,15,26,.72); backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--line);
+  background: var(--primary);
+  border-bottom: 1px solid rgba(0,0,0,.08);
+  box-shadow: 0 2px 12px rgba(0,0,0,.12);
 }
 .nav-inner { max-width: 1100px; margin: 0 auto; padding: 0 24px; height: 64px; display: flex; align-items: center; justify-content: space-between; }
-.nav-logo { font-family: var(--heading); font-weight: 800; font-size: 18px; color: var(--ink); text-decoration: none; }
-.nav-logo .dot { color: var(--coral); }
+.nav-logo { font-family: var(--heading); font-weight: 800; font-size: 18px; color: #fff; text-decoration: none; }
+.nav-logo .dot { color: var(--lavender); }
 .nav-links { display: flex; gap: 26px; list-style: none; }
-.nav-links a { color: var(--ink-soft); text-decoration: none; font-size: 14px; font-weight: 500; }
-.nav-links a:hover { color: var(--ink); }
+.nav-links a { color: #fff; text-decoration: none; font-size: 14px; font-weight: 500; }
+.nav-links a:hover { color: var(--lavender); }
 .badge-legacy {
-  font-family: var(--mono); font-size: 11px; color: var(--ink-soft);
-  border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px;
+  font-family: var(--mono); font-size: 11px; color: #fff;
+  border: 1px solid rgba(255,255,255,.35); border-radius: 999px; padding: 5px 12px;
   text-decoration: none;
 }
-.badge-legacy:hover { border-color: var(--indigo); color: var(--ink); }
+.badge-legacy:hover { border-color: var(--lavender); color: var(--lavender); }
 @media (max-width: 760px) { .nav-links { display: none; } }
 
 /* ---------- Hero: 3D tilting photo card ---------- */
@@ -113,8 +123,8 @@ a { color: var(--indigo); }
 .hero { overflow: hidden; }
 .hero-glow {
   position: absolute; inset: -20% -10% auto -10%; height: 70%;
-  background: radial-gradient(circle at 30% 30%, rgba(109,99,255,.35), transparent 60%),
-              radial-gradient(circle at 75% 60%, rgba(255,107,74,.25), transparent 55%);
+  background: radial-gradient(circle at 30% 30%, rgba(219,209,237,.55), transparent 60%),
+              radial-gradient(circle at 75% 60%, rgba(171,190,237,.4), transparent 55%);
   filter: blur(10px); pointer-events: none;
 }
 .hero-grid {
@@ -123,11 +133,12 @@ a { color: var(--indigo); }
   position: relative; width: 100%;
 }
 .hero-kicker {
-  font-family: var(--mono); font-size: 13px; color: var(--coral);
-  text-transform: uppercase; letter-spacing: .12em; margin-bottom: 18px; display: block;
+  font-family: var(--mono); font-size: 13px; color: var(--lavender-ink);
+  background: var(--lavender); display: inline-block; padding: 6px 14px; border-radius: 999px;
+  text-transform: uppercase; letter-spacing: .12em; margin-bottom: 18px;
 }
 .hero h1 { font-size: clamp(34px, 5vw, 58px); max-width: 13ch; }
-.hero h1 .hl { color: var(--indigo); }
+.hero h1 .hl { color: var(--primary); }
 .hero-sub { max-width: 46ch; font-size: 17px; margin: 22px 0 30px; }
 .hero-ctas { display: flex; gap: 14px; flex-wrap: wrap; }
 .btn {
@@ -135,10 +146,17 @@ a { color: var(--indigo); }
   padding: 13px 26px; border-radius: 999px; text-decoration: none; border: none; cursor: pointer;
   transition: transform .2s ease, box-shadow .2s ease;
 }
-.btn-primary { background: var(--indigo); color: #fff; box-shadow: 0 8px 24px rgba(109,99,255,.35); }
-.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(109,99,255,.45); }
-.btn-ghost { background: transparent; color: var(--ink); border: 1.5px solid var(--line); }
-.btn-ghost:hover { border-color: var(--ink); }
+.btn-primary { background: var(--primary); color: #fff; box-shadow: 0 8px 24px rgba(110,99,46,.3); }
+.btn-primary:hover { background: var(--primary-dark); transform: translateY(-2px); box-shadow: 0 12px 30px rgba(110,99,46,.4); }
+.btn-ghost {
+  background: transparent; color: var(--primary); border: 2px solid var(--primary);
+}
+.btn-ghost:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+/* On the Olive nav bar / Olive contact CTA a solid Olive button would vanish —
+   invert to a white pill there instead. */
+.badge-legacy, .btn-invert {
+  background: #fff; color: var(--primary); border: none; box-shadow: 0 2px 10px rgba(0,0,0,.15);
+}
 
 /* the 3D card itself: starts rotated in space, settles flat-ish with a gentle
    permanent tilt that responds a little further on hover — a "physical object"
@@ -146,21 +164,23 @@ a { color: var(--indigo); }
 .hero-card-wrap { perspective: 1200px; }
 .hero-card {
   position: relative; border-radius: 22px; overflow: hidden;
-  border: 1px solid var(--line);
-  background: radial-gradient(circle at 50% 32%, rgba(109,99,255,.28), var(--paper-soft) 72%);
+  border: 1px solid var(--surface-border);
+  background: radial-gradient(circle at 50% 32%, rgba(171,190,237,.4), var(--paper-soft) 72%);
   transform: rotateY(-18deg) rotateX(6deg) translateZ(0);
   transform-style: preserve-3d;
-  box-shadow: 0 40px 80px -20px rgba(0,0,0,.6);
+  box-shadow: 0 40px 80px -20px rgba(0,0,0,.35);
   opacity: 0; transition: opacity 1s ease, transform 1s cubic-bezier(.2,.8,.2,1);
 }
 .slide.current .hero-card { opacity: 1; transform: rotateY(-10deg) rotateX(4deg) translateZ(0); }
 .hero-card:hover { transform: rotateY(-4deg) rotateX(1deg) translateZ(20px); }
-.hero-card img { display: block; width: 100%; height: auto; aspect-ratio: 3/4; object-fit: contain; }
+.hero-card img { display: block; width: 100%; height: auto; }
 .hero-card-tag {
   position: absolute; bottom: 16px; left: 16px; right: 16px;
-  background: rgba(15,15,26,.75); backdrop-filter: blur(6px);
-  border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px;
-  font-family: var(--mono); font-size: 12.5px;
+  /* Solidly opaque white regardless of theme — sits over arbitrary photo content,
+     needs to stay readable whatever part of the photo is behind it. */
+  background: rgba(255,255,255,.9); backdrop-filter: blur(6px);
+  border: 1px solid var(--surface-border); border-radius: 12px; padding: 10px 14px;
+  font-family: var(--mono); font-size: 12.5px; color: var(--ink);
 }
 @media (max-width: 760px) {
   .hero-grid { grid-template-columns: 1fr; padding-top: 0; }
@@ -175,13 +195,16 @@ a { color: var(--indigo); }
   opacity: 0; transition: opacity 1s ease .2s;
 }
 .slide.current .stats-grid { opacity: 1; }
-.stat b { display: block; font-family: var(--heading); font-size: clamp(20px,2.4vw,28px); color: var(--yellow); }
+.stat b { display: block; font-family: var(--heading); font-size: clamp(20px,2.4vw,28px); color: var(--primary); }
+.stat:nth-child(2) b { color: var(--blue-ink); }
+.stat:nth-child(3) b { color: var(--lavender-ink); }
+.stat:nth-child(4) b { color: var(--link-blue); }
 .stat span { font-size: 11.5px; color: var(--ink-soft); }
 @media (max-width: 760px) { .stats-grid { grid-template-columns: 1fr 1fr; margin-top: 26px; padding-top: 20px; } }
 
 /* ---------- Section headings (shared) ---------- */
 section { padding: 100px 0; }
-.sec-label { font-family: var(--mono); font-size: 13px; color: var(--coral); text-transform: uppercase; letter-spacing: .1em; display: block; margin-bottom: 14px; }
+.sec-label { font-family: var(--mono); font-size: 13px; color: var(--primary); text-transform: uppercase; letter-spacing: .1em; display: block; margin-bottom: 14px; }
 .sec-title { font-size: clamp(28px,3.6vw,42px); margin-bottom: 16px; }
 .sec-intro { max-width: 60ch; font-size: 16.5px; }
 
@@ -197,20 +220,22 @@ section { padding: 100px 0; }
 .deck-item.reverse { direction: rtl; }
 .deck-item.reverse > * { direction: ltr; }
 .deck-media {
-  position: relative; border-radius: 18px; overflow: hidden; border: 1px solid var(--line);
-  box-shadow: 0 30px 60px -24px rgba(0,0,0,.55);
+  position: relative; border-radius: 18px; overflow: hidden; border: 1px solid var(--surface-border);
+  box-shadow: 0 30px 60px -24px rgba(0,0,0,.3);
   aspect-ratio: 4/3; background: var(--paper-soft);
 }
 .deck-media img, .deck-media video { width: 100%; height: 100%; object-fit: cover; display: block; }
 .deck-media .play, .deck-media .zoom {
+  /* Dark scrim regardless of site theme — this sits on top of arbitrary photo/video
+     content, not the page background, so it should never follow the light palette. */
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-  background: rgba(15,15,26,.25); color: #fff; font-size: 20px; cursor: pointer; border: none;
+  background: rgba(0,0,0,.25); color: #fff; font-size: 20px; cursor: pointer; border: none;
   opacity: 0; transition: opacity .2s ease;
 }
 .deck-media .play { opacity: 1; }
 .deck-media:hover .zoom, .deck-media:focus-within .zoom { opacity: 1; }
 .deck-media .play span, .deck-media .zoom span {
-  width: 56px; height: 56px; border-radius: 50%; background: rgba(15,15,26,.6);
+  width: 56px; height: 56px; border-radius: 50%; background: rgba(0,0,0,.6);
   display: flex; align-items: center; justify-content: center; padding-left: 4px;
   border: 1px solid rgba(255,255,255,.3);
 }
@@ -221,14 +246,14 @@ section { padding: 100px 0; }
 .deck-stat {
   width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 8px; text-align: center; padding: 24px;
-  background: linear-gradient(135deg, rgba(109,99,255,.16), rgba(255,107,74,.08));
+  background: linear-gradient(135deg, rgba(219,209,237,.5), rgba(171,190,237,.35));
 }
-.deck-stat b { font-family: var(--heading); font-size: clamp(40px,6vw,64px); color: var(--yellow); line-height: 1; }
+.deck-stat b { font-family: var(--heading); font-size: clamp(40px,6vw,64px); color: var(--primary); line-height: 1; }
 .deck-stat span { font-size: 13.5px; color: var(--ink-soft); max-width: 22ch; }
-.deck-tag { font-family: var(--mono); font-size: 12px; color: var(--indigo); background: rgba(109,99,255,.14); border-radius: 999px; padding: 4px 12px; display: inline-block; margin-bottom: 14px; }
+.deck-tag { font-family: var(--mono); font-size: 12px; color: var(--primary); background: rgba(110,99,46,.10); border-radius: 999px; padding: 4px 12px; display: inline-block; margin-bottom: 14px; }
 .deck-item h3 { font-size: 24px; margin-bottom: 10px; }
 .deck-item p { font-size: 15.5px; }
-.deck-result { margin-top: 16px; font-family: var(--mono); font-size: 13.5px; color: var(--yellow); }
+.deck-result { margin-top: 16px; font-family: var(--mono); font-size: 13.5px; color: var(--primary); font-weight: 600; }
 @media (max-width: 820px) {
   .deck-item, .deck-item.reverse { grid-template-columns: 1fr; direction: ltr; }
   .deck-item.from-left, .deck-item.from-right { transform: perspective(1000px) rotateX(14deg) translateY(30px); }
@@ -236,7 +261,7 @@ section { padding: 100px 0; }
 }
 
 /* ---------- Tools: 3D rotating ring ---------- */
-.ring-sec { background: var(--paper-soft); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); overflow: hidden; }
+.ring-sec { background: #FFFFFF; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); overflow: hidden; }
 .ring-stage {
   perspective: 900px; height: 260px; display: flex; align-items: center; justify-content: center; margin-top: 50px;
   opacity: 0; transform: scale(.85); transition: opacity .8s ease, transform .8s cubic-bezier(.2,.8,.2,1);
@@ -249,10 +274,13 @@ section { padding: 100px 0; }
 .ring-item {
   position: absolute; inset: 0; margin: auto; width: 84px; height: 84px;
   display: flex; align-items: center; justify-content: center;
-  background: var(--paper); border: 1px solid var(--line); border-radius: 18px;
-  box-shadow: 0 10px 24px rgba(0,0,0,.35);
+  background: var(--primary); border: 1px solid var(--surface-border); border-radius: 18px;
+  box-shadow: 0 10px 24px rgba(0,0,0,.2);
 }
-.ring-item img { width: 42px; height: 42px; object-fit: contain; }
+.ring-item img {
+  width: 42px; height: 42px; object-fit: contain;
+  background: #fff; border-radius: 10px; padding: 6px; box-sizing: border-box;
+}
 @keyframes spin { from { transform: rotateY(0deg); } to { transform: rotateY(360deg); } }
 .ring-stage:hover .ring { animation-play-state: paused; }
 @media (prefers-reduced-motion: reduce) { .ring { animation: none; } }
@@ -276,25 +304,31 @@ section { padding: 100px 0; }
 /* ---------- About ---------- */
 .about-grid { display: grid; grid-template-columns: .8fr 1.2fr; gap: 50px; align-items: center; margin-top: 10px; }
 .about-photo {
-  border-radius: 18px; overflow: hidden; border: 1px solid var(--line);
-  background: radial-gradient(circle at 50% 32%, rgba(109,99,255,.28), var(--paper-soft) 72%);
+  border-radius: 18px; overflow: hidden; border: 1px solid var(--surface-border);
+  background: radial-gradient(circle at 50% 32%, rgba(219,209,237,.5), var(--paper-soft) 72%);
   opacity: 0; transform: perspective(1200px) rotateY(18deg) translateX(-30px);
   transition: opacity .9s ease, transform .9s cubic-bezier(.2,.8,.2,1);
 }
 .slide.current .about-photo { opacity: 1; transform: perspective(1200px) rotateY(0) translateX(0); }
 .about-text { opacity: 0; transform: translateY(24px); transition: opacity .9s ease .15s, transform .9s cubic-bezier(.2,.8,.2,1) .15s; }
 .slide.current .about-text { opacity: 1; transform: none; }
-.about-photo img { width: 100%; height: auto; display: block; aspect-ratio: 3/4; object-fit: contain; }
+.about-photo img { width: 100%; height: auto; display: block; }
 .about-text p { margin-bottom: 16px; font-size: 16px; }
 @media (max-width: 760px) { .about-grid { grid-template-columns: 1fr; } .about-photo { max-width: 280px; } }
 
 /* ---------- Contact ---------- */
 .contact-box {
-  margin-top: 40px; border: 1px solid var(--line); border-radius: 20px; padding: 40px;
-  background: linear-gradient(135deg, rgba(109,99,255,.10), rgba(255,107,74,.06));
+  margin-top: 40px; border: 1px solid var(--surface-border); border-radius: 20px; padding: 40px;
+  background: #FFFFFF;
+  box-shadow: 0 10px 30px rgba(0,0,0,.06);
   text-align: center;
-  opacity: 0; transform: scale(.94); transition: opacity .9s ease, transform .9s cubic-bezier(.2,.8,.2,1);
 }
+.contact-box h3 { color: var(--ink); }
+.contact-box p { color: var(--ink-soft); }
+/* The fade-in-on-active-slide treatment only makes sense inside the slide deck
+   (index.html) — creatives.html is a normal scrolling page with no .slide
+   wrapper, so scope the hidden state to .slide specifically or it never un-hides. */
+.slide .contact-box { opacity: 0; transform: scale(.94); transition: opacity .9s ease, transform .9s cubic-bezier(.2,.8,.2,1); }
 .slide.current .contact-box { opacity: 1; transform: scale(1); }
 .contact-box h3 { font-size: 26px; margin-bottom: 14px; }
 .contact-box .ctas { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-top: 22px; }
@@ -306,9 +340,9 @@ section { padding: 100px 0; }
 .slide.current .final-cta { opacity: 1; transform: none; }
 .final-cta p { font-size: 14.5px; margin-bottom: 14px; }
 
-footer { padding: 34px 0 0; text-align: center; font-size: 13.5px; color: var(--ink-soft); }
-footer a { color: var(--ink-soft); text-decoration: none; }
-footer a:hover { color: var(--ink); }
+footer { padding: 34px 0 0; text-align: center; font-size: 13.5px; color: var(--ink-faint); }
+footer a { color: var(--ink-faint); text-decoration: none; }
+footer a:hover { color: var(--link-blue); }
 
 /* ---------- Lightbox (video) ---------- */
 .lightbox { position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center; padding: 24px; }
@@ -319,7 +353,7 @@ footer a:hover { color: var(--ink); }
 .lightbox-panel video[hidden], .lightbox-panel img[hidden] { display: none; }
 .lightbox-close {
   position: absolute; top: -46px; right: 0; width: 38px; height: 38px; border-radius: 50%;
-  background: var(--ink); color: var(--paper); border: none; font-size: 20px; cursor: pointer;
+  background: var(--primary); color: #fff; border: none; font-size: 20px; cursor: pointer;
 }
 
 /* ---------- Creatives page ---------- */
@@ -328,21 +362,23 @@ footer a:hover { color: var(--ink); }
   margin-top: 50px; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap: 28px;
 }
 .creative-item {
-  position: relative; border-radius: 16px; overflow: hidden; border: 1px solid var(--line);
+  position: relative; border-radius: 16px; overflow: hidden; border: 1px solid var(--surface-border);
   aspect-ratio: 4/3; background: var(--paper-soft); cursor: pointer; padding: 0; display: block; width: 100%;
 }
 .creative-item img, .creative-item video { width: 100%; height: 100%; object-fit: cover; display: block; }
 .creative-item .cap {
+  /* Dark scrim + light text regardless of site theme — sits over arbitrary photo
+     content, needs to stay legible whatever colours are in the thumbnail. */
   position: absolute; left: 0; right: 0; bottom: 0; padding: 10px 14px;
-  background: linear-gradient(0deg, rgba(15,15,26,.9), transparent);
-  font-size: 12.5px; color: var(--ink-soft); text-align: left;
+  background: linear-gradient(0deg, rgba(0,0,0,.85), transparent);
+  font-size: 12.5px; color: #fff; text-align: left;
 }
 .creative-item .play {
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-  background: rgba(15,15,26,.15); color: #fff; font-size: 20px;
+  background: rgba(0,0,0,.15); color: #fff; font-size: 20px;
 }
 .creative-item .play span {
-  width: 52px; height: 52px; border-radius: 50%; background: rgba(15,15,26,.6);
+  width: 52px; height: 52px; border-radius: 50%; background: rgba(0,0,0,.6);
   display: flex; align-items: center; justify-content: center; padding-left: 4px;
   border: 1px solid rgba(255,255,255,.3);
 }
